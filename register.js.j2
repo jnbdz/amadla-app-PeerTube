@@ -1,0 +1,53 @@
+  // result contains the userAuthenticated auth method you can call to authenticate a user
+  const result = registerExternalAuth({
+    authName: 'my-auth-method',
+
+    // Will be displayed in a button next to the login form
+    authDisplayName: () => 'Auth method'
+
+    // If the user click on the auth button, PeerTube will forward the request in this function
+    onAuthRequest: (req, res) => {
+      res.redirect('https://external-auth.example.com/auth')
+    },
+
+    // Same than registerIdAndPassAuth option
+    // onLogout: ...
+
+    // Same than registerIdAndPassAuth option
+    // hookTokenValidity: ...
+  })
+
+  router.use('/external-auth-callback', (req, res) => {
+    // Forward the request to PeerTube
+    result.userAuthenticated({
+      req,
+      res,
+      username: 'user'
+      email: 'user@example.com'
+      role: 2
+      displayName: 'User display name',
+
+      // Custom admin flags (bypass video auto moderation etc.)
+      // https://github.com/Chocobozzz/PeerTube/blob/develop/shared/models/users/user-flag.model.ts
+      // PeerTube >= 5.1
+      adminFlags: 0,
+      // Quota in bytes
+      // PeerTube >= 5.1
+      videoQuota: 1024 * 1024 * 1024, // 1GB
+      // PeerTube >= 5.1
+      videoQuotaDaily: -1, // Unlimited
+
+      // Update the user profile if it already exists
+      // Default behaviour is no update
+      // Introduced in PeerTube >= 5.1
+      userUpdater: ({ fieldName, currentValue, newValue }) => {
+        // Always use new value except for videoQuotaDaily field
+        if (fieldName === 'videoQuotaDaily') return currentValue
+
+        return newValue
+      }
+    })
+  })
+
+  // Unregister this external auth method
+  unregisterExternalAuth('my-auth-method)
